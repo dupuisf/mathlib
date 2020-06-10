@@ -546,10 +546,11 @@ instance : add_comm_group p :=
 by refine {add := (+), zero := 0, neg := has_neg.neg, ..};
   { intros, apply set_coe.ext, simp [add_comm, add_left_comm] }
 
-instance submodule_is_add_subgroup : is_add_subgroup (p : set M) :=
-{ zero_mem := p.zero,
-  add_mem  := p.add,
-  neg_mem  := λ _, p.neg_mem }
+def to_add_subgroup : add_subgroup M :=
+{ carrier   := p,
+  zero_mem' := p.zero,
+  add_mem'  := p.add,
+  neg_mem'  := λ _, p.neg_mem }
 
 @[simp, norm_cast] lemma coe_sub (x y : p) : (↑(x - y) : M) = ↑x - ↑y := rfl
 

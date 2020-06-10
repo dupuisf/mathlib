@@ -710,17 +710,18 @@ section span_int
 open submodule
 
 lemma span_int_eq_add_group_closure (s : set R) :
-  ↑(span ℤ s) = add_group.closure s :=
-set.subset.antisymm (λ x hx, span_induction hx
-  (λ _, add_group.mem_closure)
-  is_add_submonoid.zero_mem
-  (λ a b ha hb, is_add_submonoid.add_mem ha hb)
-  (λ n a ha, by { exact is_add_subgroup.gsmul_mem ha }))
-  (add_group.closure_subset subset_span)
+  ((span ℤ s) : set R) = add_subgroup.closure s :=
+set.subset.antisymm
+  (λ x hx, span_induction hx
+    add_subgroup.subset_closure
+    (add_submonoid.zero_mem _)
+    (λ a b ha hb, add_submonoid.add_mem _ ha hb)
+    (λ n a ha, (add_subgroup.closure _).gsmul_mem ha n))
+  (((submodule.to_add_subgroup (span ℤ s)).closure_le).mpr subset_span)
 
-@[simp] lemma span_int_eq (s : set R) [is_add_subgroup s] :
-  (↑(span ℤ s) : set R) = s :=
-by rw [span_int_eq_add_group_closure, add_group.closure_add_subgroup]
+@[simp] lemma span_int_eq (s : add_subgroup R) :
+  (↑(span ℤ (s : set R)) : set R) = s :=
+by rw [span_int_eq_add_group_closure, add_subgroup.closure_eq]
 
 end span_int
 

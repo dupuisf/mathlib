@@ -446,7 +446,7 @@ begin
   simp only [mem_supr, supr_le_iff],
   assume N hN,
   rw [finsupp.total_apply, finsupp.sum, ← submodule.mem_coe],
-  apply is_add_submonoid.finset_sum_mem,
+  apply N.sum_mem,
   assume x hx,
   apply submodule.smul_mem,
   let i : ι := g ⟨x, hx⟩,

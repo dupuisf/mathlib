@@ -13,11 +13,15 @@ variables (G : Type*) [group G] [topological_space G]
 
 /-- The type of open subgroups of a topological group. -/
 @[to_additive open_add_subgroup]
-def open_subgroup := { U : set G // is_open U ∧ is_subgroup U }
+def open_subgroup := { U : subgroup G // is_open (U : set G) }
 
 @[to_additive]
-instance open_subgroup.has_coe :
-  has_coe (open_subgroup G) (opens G) := ⟨λ U, ⟨U.1, U.2.1⟩⟩
+instance open_subgroup.has_coe_to_opens :
+  has_coe (open_subgroup G) (opens G) := ⟨λ U, ⟨U.1, U.2⟩⟩
+
+@[to_additive]
+instance open_subgroup.has_coe_to_subgroup :
+  has_coe (open_subgroup G) (subgroup G) := ⟨λ U, U.1⟩
 end
 
 -- Tell Lean that `open_add_subgroup` is a namespace
@@ -35,7 +39,8 @@ instance : has_mem G (open_subgroup G) := ⟨λ g U, g ∈ (U : set G)⟩
 
 @[to_additive]
 lemma ext : (U = V) ↔ ((U : set G) = V) :=
-by cases U; cases V; split; intro h; try {congr}; assumption
+⟨ λ h, by rw h,
+  λ h, by {cases U with U _, cases V with V _, congr, cases U, cases V, congr, exact h } ⟩
 
 @[ext, to_additive]
 lemma ext' (h : (U : set G) = V) : (U = V) :=
@@ -45,24 +50,21 @@ ext.mpr h
 lemma coe_injective : injective (λ U : open_subgroup G, (U : set G)) :=
 λ U V h, ext' h
 
-@[to_additive is_add_subgroup]
-instance : is_subgroup (U : set G) := U.2.2
-
 variable (U)
 @[to_additive]
-protected lemma is_open : is_open (U : set G) := U.2.1
+protected lemma is_open : is_open (U : set G) := U.2
 
 @[to_additive]
 protected lemma one_mem : (1 : G) ∈ U :=
-@is_submonoid.one_mem _ _ (U : set G) _
+U.1.one_mem
 
 @[to_additive]
 protected lemma inv_mem {g : G} (h : g ∈ U) : g⁻¹ ∈ U :=
-  @is_subgroup.inv_mem G _ U _ g h
+U.1.inv_mem h
 
 @[to_additive]
 protected lemma mul_mem {g₁ g₂ : G} (h₁ : g₁ ∈ U) (h₂ : g₂ ∈ U) : g₁ * g₂ ∈ U :=
-  @is_submonoid.mul_mem G _ U _ g₁ g₂ h₁ h₂
+U.1.mul_mem h₁ h₂
 
 @[to_additive]
 lemma mem_nhds_one : (U : set G) ∈ 𝓝 (1 : G) :=
@@ -71,7 +73,7 @@ variable {U}
 
 @[to_additive]
 instance : inhabited (open_subgroup G) :=
-{ default := ⟨set.univ, ⟨is_open_univ, by apply_instance⟩⟩ }
+{ default := ⟨⊤, is_open_univ⟩ }
 
 @[to_additive]
 lemma is_open_of_nonempty_open_subset [topological_monoid G] {s : set G} [is_subgroup s]
@@ -98,8 +100,8 @@ begin
 end
 
 @[to_additive is_open_of_open_add_subgroup]
-lemma is_open_of_open_subgroup [topological_monoid G] {s : set G} [is_subgroup s]
-  (h : ∃ U : open_subgroup G, (U : set G) ⊆ s) : is_open s :=
+lemma is_open_of_open_subgroup [topological_monoid G] {s : subgroup G}
+  (h : ∃ U : open_subgroup G, (U : set G) ⊆ s) : is_open (s : set G) :=
 is_open_of_nonempty_open_subset $ let ⟨U, hU⟩ := h in ⟨U, ⟨⟨1, U.one_mem⟩⟩, hU⟩
 
 @[to_additive]
@@ -114,11 +116,10 @@ begin
     erw set.mem_preimage at hux,
     rw set.mem_compl_iff at hx ⊢,
     intro hu, apply hx,
-    convert is_submonoid.mul_mem (is_subgroup.inv_mem hux) hu,
-    simp },
+    simpa using U.mul_mem (U.inv_mem hux) hu },
   split,
   { exact (continuous_mul_right _) _ U.is_open },
-  { simpa using @is_submonoid.one_mem _ _ (U : set G) _ }
+  { simpa using U.one_mem }
 end
 
 section
@@ -126,7 +127,7 @@ variables {H : Type*} [group H] [topological_space H]
 
 @[to_additive]
 def prod (U : open_subgroup G) (V : open_subgroup H) : open_subgroup (G × H) :=
-⟨(U : set G).prod (V : set H), is_open_prod U.is_open V.is_open, by apply_instance⟩
+⟨(U : subgroup G).prod (V : subgroup H), is_open_prod U.is_open V.is_open⟩
 
 end
 
@@ -135,7 +136,7 @@ instance : partial_order (open_subgroup G) := partial_order.lift _ coe_injective
 
 @[to_additive]
 instance : semilattice_inf_top (open_subgroup G) :=
-{ inf := λ U V, ⟨(U : set G) ∩ V, is_open_inter U.is_open V.is_open, by apply_instance⟩,
+{ inf := λ U V, ⟨U ⊓ V, is_open_inter U.is_open V.is_open⟩,
   inf_le_left := λ U V, set.inter_subset_left _ _,
   inf_le_right := λ U V, set.inter_subset_right _ _,
   le_inf := λ U V W hV hW, set.subset_inter hV hW,
@@ -143,20 +144,20 @@ instance : semilattice_inf_top (open_subgroup G) :=
   le_top := λ U, set.subset_univ _,
   ..open_subgroup.partial_order }
 
+#check subgroup.closure_union
+
 @[to_additive]
 instance [topological_monoid G] : semilattice_sup_top (open_subgroup G) :=
 { sup := λ U V,
-  { val := group.closure ((U : set G) ∪ V),
+  { val := U ⊔ V,
     property :=
     begin
-      haveI subgrp := _, refine ⟨_, subgrp⟩,
       { refine is_open_of_open_subgroup _,
-        exact ⟨U, set.subset.trans (set.subset_union_left _ _) group.subset_closure⟩ },
-      { apply_instance }
+        exact ⟨U, set.subset.trans (set.subset_union_left U V) (subgroup.union_subset_sup _ _)⟩ },
     end },
-  le_sup_left := λ U V, set.subset.trans (set.subset_union_left _ _) group.subset_closure,
-  le_sup_right := λ U V, set.subset.trans (set.subset_union_right _ _) group.subset_closure,
-  sup_le := λ U V W hU hV, group.closure_subset $ set.union_subset hU hV,
+  le_sup_left := λ U V, @le_sup_left (subgroup G) _ U V,
+  le_sup_right := λ U V, @le_sup_right (subgroup G) _ U V,
+  sup_le := λ U V W, @sup_le (subgroup G) _ U V W,
   ..open_subgroup.semilattice_inf_top }
 
 @[simp, to_additive] lemma coe_inf : (↑(U ⊓ V) : set G) = (U : set G) ∩ V := rfl
@@ -172,7 +173,8 @@ variables [add_comm_group M] [topological_space M] [topological_add_group M] [mo
 
 lemma is_open_of_open_submodule {P : submodule R M}
   (h : ∃ U : submodule R M, is_open (U : set M) ∧ U ≤ P) : is_open (P : set M) :=
-let ⟨U, h₁, h₂⟩ := h in is_open_of_open_add_subgroup ⟨⟨U, h₁, by apply_instance⟩, h₂⟩
+let ⟨U, h₁, h₂⟩ := h in
+is_open_of_open_add_subgroup ⟨⟨U.to_add_subgroup, h₁⟩, λ x hx, h₂ _⟩
 
 end submodule
 
