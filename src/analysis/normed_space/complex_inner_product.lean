@@ -633,6 +633,24 @@ def complex.is_complex_inner_product_space : complex_inner_product_space ℂ :=
     end
 }
 
+/-
+Orthogonality: `x` and `y` are orthogonal if `⟨x,y⟩ = 0`.
+-/
+
+section orthogonal
+
+variables {ι : Type*}
+
+def is_orthogonal_set (v : ι → α) := ∀ i j : ι, i ≠ j → inner (v i) (v j) = 0
+
+def is_normalized_set (v : ι → α) := ∀ i : ι, inner (v i) (v i) = 1
+
+def is_orthonormal_set (v : ι → α) := is_orthogonal_set v ∧ is_normalized_set v
+
+def is_orthonormal_basis (v : ι → α) := is_basis ℂ v ∧ is_orthonormal_set v
+
+end orthogonal
+
 section instances
 /-- The standard complex Euclidean space, functions on a finite type. For an `n`-dimensional space
 use `complex_euclidean_space (fin n)`.  -/

@@ -5,6 +5,7 @@ Authors: Frédéric Dupuis
 -/
 
 import analysis.normed_space.complex_inner_product
+import set_theory.cardinal
 
 /-!
 
@@ -23,10 +24,37 @@ noncomputable theory
 
 universes u v w
 
-variables {α : Type u} {F : Type v} {G : Type w}
-variables {ι : Type u} [fintype ι]
+variables {ι : Type*} [fintype ι]
 
-class complex_hilbert_space (α : Type u) extends complex_inner_product_space α, complete_space α
+/-
+Not good: I need to make sure it is complete *with respect to the distance induced by the
+inner product*, and not whatever distance this Pi.uniform_space thing gives me.
+-/
+
+--section prio
+--set_option default_priority 100 -- see Note [default priority]
+--@[protect_proj, ancestor complex_inner_product_space complete_space]
+--class complex_hilbert_space (V : Type u) extends complex_inner_product_space V, complete_space V
+--end prio
+
+class separable (V : Type u) [complex_hilbert_space V] :=
+  (countable_dim := vector_space.dim ℂ V ≤ cardinal.omega)
+
+#check separable
+
+/-
+Show that the standard complex Euclidean space is a complex Hilbert space
+-/
+section instances
+
+instance : uniform_space (complex_euclidean_space ι) := Pi.uniform_space (λ _, ℂ)
+instance : complete_space ℂ := complete_of_proper  -- somehow apply_instance takes forever
+instance : complete_space (complex_euclidean_space ι) := Pi.complete (λ _, ℂ)
+#check complex_hilbert_space ι
+--def foo : complex_hilbert_space (complex_euclidean_space ι) := by apply_instance
+
+
+end instances
 
 /-
 Hermitian adjoint
@@ -35,11 +63,3 @@ Hermitian adjoint
 variables {𝓗₁ : Type u} {𝓗₂ : Type u} [complex_hilbert_space 𝓗₁] [complex_hilbert_space 𝓗₂]
 
 def is_adjoint (adj : (𝓗₁ →ₗ[ℂ] 𝓗₂) →ₗ[ℂ] (𝓗₂ →ₗ[ℂ] 𝓗₁)) : Prop := ∀ (A : 𝓗₁ →ₗ[ℂ] 𝓗₂), ∀ x y, inner x (A y) = inner ((adj A) x) y
-
-section instances
-
-instance : uniform_space (complex_euclidean_space ι) := Pi.uniform_space (λ _, ℂ)
-instance : complete_space ℂ := complete_of_proper  -- somehow apply_instance takes forever
-instance : complete_space (complex_euclidean_space ι) := Pi.complete (λ _, ℂ)
-
-end instances
