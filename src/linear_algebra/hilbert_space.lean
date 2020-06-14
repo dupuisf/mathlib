@@ -31,23 +31,26 @@ Not good: I need to make sure it is complete *with respect to the distance induc
 inner product*, and not whatever distance this Pi.uniform_space thing gives me.
 -/
 
---section prio
---set_option default_priority 100 -- see Note [default priority]
---@[protect_proj, ancestor complex_inner_product_space complete_space]
---class complex_hilbert_space (V : Type u) extends complex_inner_product_space V, complete_space V
---end prio
+section prio
 
-class separable (V : Type u) [complex_hilbert_space V] :=
+set_option default_priority 100 -- see Note [default priority]
+class complex_hilbert_space (V : Type u) [complex_inner_product_space V] :=
+  (is_complete := complete_space V)
+
+class separable (V : Type u) [add_comm_group V] [vector_space ℂ V] [complex_inner_product_space V] [complex_hilbert_space V] :=
   (countable_dim := vector_space.dim ℂ V ≤ cardinal.omega)
 
-#check separable
+end prio
+
+
 
 /-
 Show that the standard complex Euclidean space is a complex Hilbert space
 -/
 section instances
 
-instance : uniform_space (complex_euclidean_space ι) := Pi.uniform_space (λ _, ℂ)
+--instance : uniform_space (complex_euclidean_space ι) := Pi.uniform_space (λ _, ℂ)
+#print instances uniform_space
 instance : complete_space ℂ := complete_of_proper  -- somehow apply_instance takes forever
 instance : complete_space (complex_euclidean_space ι) := Pi.complete (λ _, ℂ)
 #check complex_hilbert_space ι
