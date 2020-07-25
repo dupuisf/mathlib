@@ -5,6 +5,7 @@ Authors: Frédéric Dupuis
 -/
 
 import analysis.convex.basic
+import analysis.convex.topology
 import analysis.calculus.local_extr
 
 /-!
@@ -86,56 +87,43 @@ begin
   push_neg at H_cont,
   rcases H_cont with ⟨x, ⟨x_in_s, fx_lt_fa⟩⟩,
 
-  set f₁ : ℝ →L[ℝ] E := to_continuous_linear_map₁
-    { to_fun := (λ z : ℝ, z • (x - a)),
-      map_add' := by simp only [add_smul, forall_const, eq_self_iff_true],
-      map_smul' := by intros y z; simp only [mul_smul, algebra.id.smul_eq_mul],
-    } with hf₁,
-  set f₂ := (λ z : E, a + z) with hf₂,
-  set g : ℝ → ℝ := f ∘ f₂ ∘ f₁ with hg,
-  set s' := ((f₂ ∘ f₁) ⁻¹' s) with hs',
+  let g : affine_map ℝ ℝ ℝ E E := affine_map.line_map a (x - a),
 
-  have f₂zero : f₂ 0 = a := by simp,
-  have f₂_cont : continuous f₂ := continuous_add_left a,
+  have g_cont : continuous g := affine_map.line_map_continuous,
+  have hg0 : g 0 = a := affine_map.line_map_apply_zero a (x - a),
+  have hg1 : g 1 = x := by simp [affine_map.line_map_apply, one_smul],
 
-  have ff₂_local_min_on : is_local_min_on (f ∘ f₂) (f₂ ⁻¹' s) (f₁ 0),
-  { have h₁ : f₁ 0 = 0 := by simp,
-    rw [h₁],
-    rw [←f₂zero] at h_localmin,
-    refine is_local_min_on.comp_continuous_on h_localmin subset.rfl (continuous.continuous_on f₂_cont) _,
-    simp only [f₂zero, a_in_s, mem_preimage] },
+  have fg_local_min_on : is_local_min_on (f ∘ g) (g ⁻¹' s) 0,
+  {
+    rw [←hg0] at h_localmin,
+    refine is_local_min_on.comp_continuous_on h_localmin subset.rfl
+      (continuous.continuous_on g_cont) _,
+    simp [mem_preimage, hg0, a_in_s] },
 
-  have g_local_min_on : is_local_min_on g s' 0,
-  { rw [hg, ←function.comp.assoc f f₂ f₁],
-    refine is_local_min_on.comp_continuous_on ff₂_local_min_on (by rw [hs', preimage_preimage]) _ _,
-    { exact continuous.continuous_on f₁.cont },
-    { simp [f₂zero, a_in_s] } },
+  have fg_conv : convex_on (g ⁻¹' s) (f ∘ g) := convex_on.affine_preimage h_conv,
 
-  have g_conv : convex_on s' g,
-  { have ff₂_conv : convex_on (f₂ ⁻¹' s) (f ∘ f₂) := convex_on.translate_right h_conv,
-    rw [hg, ←function.comp.assoc f f₂ f₁, hs', ←preimage_preimage], exact convex_on.linear_preimage ff₂_conv },
+  have fg_min_on : is_min_on (f ∘ g) (Icc 0 1) 0,
+  { have Icc_in_s' : Icc 0 1 ⊆ (g ⁻¹' s),
+    { have h0 : (0 : ℝ) ∈ (g ⁻¹' s) := by simp [mem_preimage, a_in_s],
+      have h1 : (1 : ℝ) ∈ (g ⁻¹' s) := by simp [mem_preimage, hg1, x_in_s],
 
-  have g_min_on : is_min_on g (Icc 0 1) 0,
-  { have Icc_in_s' : Icc 0 1 ⊆ s',
-    { have h0 : (0 : ℝ) ∈ s' := by simp [hg, hf₁, hf₂, a_in_s],
-      have h1 : (1 : ℝ) ∈ s' := by simp [hg, hf₁, hf₂, x_in_s],
-      have : (0 : ℝ) ≤ 1, linarith,
-      rw [←(segment_eq_Icc this)],
-      exact convex.segment_subset g_conv.1 h0 h1 },
-    have g_local_min_on' : is_local_min_on g (Icc 0 1) 0 :=
-      is_local_min_on.on_subset g_local_min_on Icc_in_s',
+      rw [←(segment_eq_Icc (show (0 : ℝ) ≤ 1, by linarith))],
+      exact convex.segment_subset (convex.affine_preimage h_conv.1)
+        (by simp [mem_preimage, hg0, a_in_s]) (by simp [mem_preimage, hg1, x_in_s]) },
 
-    refine is_min_on_of_is_local_min_on_of_convex_on_Icc (by linarith) g_local_min_on' _,
-    exact convex_on.subset g_conv Icc_in_s' (convex_Icc 0 1) },
+    have fg_local_min_on' : is_local_min_on (f ∘ g) (Icc 0 1) 0 :=
+      is_local_min_on.on_subset fg_local_min_on Icc_in_s',
+
+    refine is_min_on_of_is_local_min_on_of_convex_on_Icc (by linarith) fg_local_min_on' _,
+    exact convex_on.subset fg_conv Icc_in_s' (convex_Icc 0 1) },
 
   have gx_lt_ga := calc
-                      g 1 = f x     : by simp [hg, hf₁, hf₂]
-                      ... < f a     : fx_lt_fa
-                      ... = g 0     : by simp [hg, hf₁, hf₂],
+                      (f ∘ g) 1 = f x           : by simp [hg1]
+                            ... < f a           : fx_lt_fa
+                            ... = (f ∘ g) 0     : by simp [hg0],
 
-  rw [is_min_on_iff] at g_min_on,
-  specialize g_min_on 1 (mem_Icc.mpr ⟨by linarith, le_refl 1⟩),
-  linarith,
+  rw [is_min_on_iff] at fg_min_on,
+  linarith[fg_min_on 1 (mem_Icc.mpr ⟨zero_le_one, le_refl 1⟩)],
 end
 
 /-
@@ -158,5 +146,3 @@ lemma is_min_of_is_local_min_of_convex {f : E → ℝ} {a : E}
   ∀ x, f a ≤ f x :=
 λ x, (is_min_on_of_is_local_min_on_of_convex_on (mem_univ a)
         (is_local_min.on h_local_min univ) h_conv) x (mem_univ x)
-
-#lint

@@ -5,6 +5,9 @@ Authors: Alexander Bentkamp, Yury Kudriashov
 -/
 import analysis.convex.basic
 import analysis.normed_space.finite_dimension
+import linear_algebra.affine_space
+import topology.continuous_map
+import topology.algebra.continuous_functions
 
 /-!
 # Topological and metric properties of convex sets
@@ -24,7 +27,7 @@ We prove the following facts:
   of the standard simplex;
 -/
 
-variables {ι : Type*} {E : Type*}
+variables {ι : Type*} {E : Type*} {F : Type*}
 
 open set
 
@@ -70,6 +73,8 @@ section topological_vector_space
 
 variables [add_comm_group E] [vector_space ℝ E] [topological_space E]
   [topological_add_group E] [topological_vector_space ℝ E]
+  [add_comm_group F] [vector_space ℝ F] [topological_space F]
+  [topological_add_group F] [topological_vector_space ℝ F] [has_continuous_add F]
 
 /-- In a topological vector space, the interior of a convex set is convex. -/
 lemma convex.interior {s : set E} (hs : convex s) : convex (interior s) :=
@@ -111,6 +116,33 @@ end
 lemma set.finite.is_closed_convex_hull [t2_space E] {s : set E} (hs : finite s) :
   is_closed (convex_hull s) :=
 hs.compact_convex_hull.is_closed
+
+lemma affine_map.continuous_iff (f : affine_map ℝ E E F F) :
+  continuous f ↔ continuous f.linear :=
+begin
+  split,
+  { intro hc,
+    let f' : C(E, F) := ⟨f, hc⟩,
+    let fconst : C(E, F) := ⟨(λ z, f 0), continuous_const⟩,
+    let fdiff := f' - fconst,
+    convert fdiff.2,
+    change f.linear.to_fun = fdiff.to_fun,
+    rw [affine_map.decomp' f],
+    refl },
+  { intro hc,
+    let flin' : C(E, F) := ⟨f.linear, hc⟩,
+    let fconst : C(E, F) := ⟨(λ z, f 0), continuous_const⟩,
+    let f' := flin' + fconst,
+    convert f'.2,
+    change f.to_fun = f'.to_fun,
+    rw [affine_map.decomp f],
+    refl }
+end
+
+lemma affine_map.line_map_continuous {G : Type*} [normed_group G] [normed_space ℝ G] {p v : G} :
+  continuous (@affine_map.line_map ℝ G G _ _ _ _ p v) :=
+(affine_map.continuous_iff (affine_map.line_map p v)).mpr
+  (linear_map.to_continuous_linear_map₁ (affine_map.line_map p v).linear).2
 
 end topological_vector_space
 
