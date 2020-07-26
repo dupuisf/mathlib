@@ -1482,9 +1482,7 @@ end affine_map
 namespace affine_map
 
 variables {E F : Type*} [add_comm_group E] [vector_space ℝ E] [topological_space E]
-  [topological_add_group E] [topological_vector_space ℝ E] [has_continuous_add E]
-  [add_comm_group F] [vector_space ℝ F] [topological_space F]
-  [topological_add_group F] [topological_vector_space ℝ F] [has_continuous_add F]
+  [add_comm_group F] [vector_space ℝ F] [topological_space F] [topological_add_group F]
 
 /-
 TODO: Deal with the case where the point spaces are different from the vector spaces.
