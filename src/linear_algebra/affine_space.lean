@@ -1491,7 +1491,7 @@ TODO: Deal with the case where the point spaces are different from the vector sp
 /--
 An affine map is continuous iff its underlying linear map is continuous.
 -/
-lemma continuous_iff (f : affine_map ℝ E E F F) :
+lemma continuous_iff {f : affine_map ℝ E E F F} :
   continuous f ↔ continuous f.linear :=
 begin
   split,
@@ -1501,7 +1501,7 @@ begin
     let fdiff := f' - fconst,
     convert fdiff.2,
     change f.linear.to_fun = fdiff.to_fun,
-    rw [affine_map.decomp' f],
+    rw [decomp' f],
     refl },
   { intro hc,
     let flin' : C(E, F) := ⟨f.linear, hc⟩,
@@ -1509,7 +1509,7 @@ begin
     let f' := flin' + fconst,
     convert f'.2,
     change f.to_fun = f'.to_fun,
-    rw [affine_map.decomp f],
+    rw [decomp f],
     refl }
 end
 
@@ -1517,9 +1517,8 @@ end
 The line map is continuous.
 -/
 lemma line_map_continuous {G : Type*} [normed_group G] [normed_space ℝ G] {p v : G} :
-  continuous (@affine_map.line_map ℝ G G _ _ _ _ p v) :=
-(affine_map.continuous_iff (affine_map.line_map p v)).mpr
-  (linear_map.to_continuous_linear_map₁ (affine_map.line_map p v).linear).2
+  continuous (@line_map ℝ G G _ _ _ _ p v) :=
+continuous_iff.mpr (linear_map.to_continuous_linear_map₁ (line_map p v).linear).2
 
 end affine_map
 
