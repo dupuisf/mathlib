@@ -1400,17 +1400,20 @@ by { rw [affine_comp_line_map], simp [line_map_apply] }
 
 /-- Decomposition of an affine map in the special case when the point space and vector space
 are the same -/
-lemma decomp (f : affine_map k V1 V1 V2 V2) : f.to_fun = f.linear + (λ z, f 0) :=
+lemma decomp (f : affine_map k V1 V1 V2 V2) : (f : V1 → V2) = f.linear + (λ z, f 0) :=
 begin
   ext x,
-  rw [show x = x +ᵥ 0, by exact (add_zero x).symm, f.map_vadd'],
-  simp,
+  have : x = x +ᵥ 0 := (add_zero x).symm,
+  calc
+    f x = f.to_fun x                              : rfl
+    ... = f.linear x + f.to_fun 0                 : by rw [this, f.map_vadd', ←this]; refl
+    ... = (f.linear.to_fun + λ (z : V1), f 0) x   : by simp,
 end
 
 /-- Decomposition of an affine map in the special case when the point space and vector space
 are the same -/
-lemma decomp' (f : affine_map k V1 V1 V2 V2) : f.linear.to_fun = f.to_fun - (λ z, f 0) :=
-by rw [decomp f]; simp only [add_sub_cancel, linear_map.to_fun_eq_coe]
+lemma decomp' (f : affine_map k V1 V1 V2 V2) : (f.linear : V1 → V2) = f - (λ z, f 0) :=
+by rw [decomp]; simp only [linear_map.map_zero, pi.add_apply, add_sub_cancel, zero_add]
 
 end affine_map
 
@@ -1488,9 +1491,7 @@ variables {E F : Type*} [add_comm_group E] [vector_space ℝ E] [topological_spa
 TODO: Deal with the case where the point spaces are different from the vector spaces.
 -/
 
-/--
-An affine map is continuous iff its underlying linear map is continuous.
--/
+/-- An affine map is continuous iff its underlying linear map is continuous. -/
 lemma continuous_iff {f : affine_map ℝ E E F F} :
   continuous f ↔ continuous f.linear :=
 begin
@@ -1500,7 +1501,6 @@ begin
     let fconst : C(E, F) := ⟨(λ z, f 0), continuous_const⟩,
     let fdiff := f' - fconst,
     convert fdiff.2,
-    change f.linear.to_fun = fdiff.to_fun,
     rw [decomp' f],
     refl },
   { intro hc,
@@ -1508,14 +1508,11 @@ begin
     let fconst : C(E, F) := ⟨(λ z, f 0), continuous_const⟩,
     let f' := flin' + fconst,
     convert f'.2,
-    change f.to_fun = f'.to_fun,
     rw [decomp f],
     refl }
 end
 
-/--
-The line map is continuous.
--/
+/-- The line map is continuous. -/
 lemma line_map_continuous {G : Type*} [normed_group G] [normed_space ℝ G] {p v : G} :
   continuous (@line_map ℝ G G _ _ _ _ p v) :=
 continuous_iff.mpr (linear_map.to_continuous_linear_map₁ (line_map p v).linear).2
